@@ -60,9 +60,9 @@ class MSF:
         '''
         # newshape = self.dim5data.size / self.PIXEL_DIMENSION
         # cpy = self.dim5data, (newshape, self.PIXEL_DIMENSION))  # shape  larg*alt/pixel5d , 5
-        cpy = self.dim5data  # shape  larg*alt/pixel5d , 5
-        cpy_bis = np.copy(cpy)
-        cpy2 = np.copy(cpy)
+        cpy = self.dim5data  # shape  larg*alt/pixel5d , 5 OOPIA QUE RECEBERÁ NOVOS VALORES MAS QUE TERÁ OS PIXELS REMOVIDOS QUANDO CONVERGIREM
+        cpy_bis = np.copy(cpy)  # copia dos pixels que vai servir para a KDTREE
+        cpy2 = np.copy(cpy)  # copia que receberão os novos valores
         self.KD_tree = sp.KDTree(cpy_bis)
         old_size = cpy.size
         while (cpy.size > 0):  # enquanto tiver ponrtos que não convergiram
@@ -72,19 +72,8 @@ class MSF:
             while (ind_cpy < (
                         cpy.size / self.PIXEL_DIMENSION)):  # enquanto não tiver percorrido toda a lista de pontos da imagem
                 this_pixel = cpy[ind_cpy]
-                # print("this_pixel[0:1]")
-                # print(this_pixel[0:2])
 
-                denum = 0
                 nnL = self.get_nearest_ng(cpy_bis, this_pixel, self.neighbors)
-                # for point in nnL:  # para todos os vizinhos encontrados
-                #     xs = point[0:2]
-                #     xr = point[2:]
-                #     cs = math.exp(np.linalg.norm(self.mult_by_const(xs, 1.0 / self.hs), 2))
-                #     cr = math.exp(np.linalg.norm(self.mult_by_const(xr, 1.0 / self.hr), 2))
-                #     num = self.sum_normal(num, self.mult_by_const(point, cs * cr))
-                #     denum += cs * cr
-                # new_pixel = self.mult_by_const(num, 1.0 / denum)
                 new_pixel = self.calculate_new_pixel(nnL, this_pixel)
                 dist_vector = np.linalg.norm(pi.Pixel.diff_normal(new_pixel, this_pixel), 2)
                 # print(new_pixel)
@@ -96,7 +85,7 @@ class MSF:
                     cpy[ind_cpy] = new_pixel
                 ind_cpy += 1
                 ind_cpy2 += 1
-        mat_filtered_image = pi.get_rgb(cpy2)
+        mat_filtered_image = pi.Pixel.get_rgb(cpy2)
         print("mat_filtered_image s", mat_filtered_image[10 * self.image.size[0] + 10])
         new_image = self.create_new_image(mat_filtered_image, self.image.size,
                                           "RGB")
@@ -201,16 +190,3 @@ print(new2.getpixel((10, 10)))
 print(new.getpixel((10, 10)))
 new.show()
 img.show()
-# arr = np.array([np.array([40, 40, 40, 40, 40]), np.array([50, 50, 50, 50, 50])])
-# arr1 = np.array([900, 2, 3, 4, 5])
-# # d = msf.sum_normal(arr, arr1)
-# print(msf.calculate_new_pixel(arr, np.array([50, 50, 50, 50, 50])))
-# new = msf.run_mean_shift()
-# new.show()
-# img.show()
-
-
-# img2 = msf.run_mean_shift()
-# # msf.test()
-# img.show()
-# img2.show()
