@@ -1,6 +1,6 @@
 from _hashlib import new
 from matplotlib.pyplot import flag
-import Kernel as K
+from Kernel import Kernel
 from PIL import Image, ImageFilter
 import scipy.spatial as sp
 import numpy as np
@@ -42,14 +42,16 @@ class MSF:
         # dt = np.dtype(K.Kernel)
         # self.kernels = np.zeros((larg, alt), dt)
         self.dim5data = np.zeros((larg * alt, 5))
-        print(self.dim5data)
         data = self.image.getdata()
+        self.kernels = np.zeros(alt * larg, dtype=object)
         for y in range(alt * larg):
-            # for x in range(larg):
             color = data[y]
+            # print(y)
+            self.kernels[y] = Kernel(np.array([y % larg, y  //alt, color[0], color[1], color[2]]))
+            # for x in range(larg):
             # self.kernels[x, y] = K.Kernel((x, y), color)
             # self.dim5data[x, y] = [x, y, color[0], color[1], color[2]]
-            self.dim5data[y] = [y // larg, y % alt, color[0], color[1], color[2]]
+            self.dim5data[y] = [y % larg, y // alt, color[0], color[1], color[2]]
 
     # print(int(self.dim5data[0].size / self.PIXEL_DIMENSION),
     #       int(self.dim5data.size / self.dim5data[0].size))
@@ -60,37 +62,66 @@ class MSF:
         '''
         # newshape = self.dim5data.size / self.PIXEL_DIMENSION
         # cpy = self.dim5data, (newshape, self.PIXEL_DIMENSION))  # shape  larg*alt/pixel5d , 5
-        cpy = self.dim5data  # shape  larg*alt/pixel5d , 5 OOPIA QUE RECEBERÁ NOVOS VALORES MAS QUE TERÁ OS PIXELS REMOVIDOS QUANDO CONVERGIREM
-        cpy_bis = np.copy(cpy)  # copia dos pixels que vai servir para a KDTREE
-        cpy2 = np.copy(cpy)  # copia que receberão os novos valores
-        self.KD_tree = sp.KDTree(cpy_bis)
-        old_size = cpy.size
-        while (cpy.size > 0):  # enquanto tiver ponrtos que não convergiram
-            print(cpy.size)
-            ind_cpy = 0
-            ind_cpy2 = 0
-            while (ind_cpy < (
-                        cpy.size / self.PIXEL_DIMENSION)):  # enquanto não tiver percorrido toda a lista de pontos da imagem
-                this_pixel = cpy[ind_cpy]
+        cpy = np.copy(
+            self.dim5data)  # shape  larg*alt/pixel5d , 5 OOPIA QUE RECEBER NOVOS VALORES MAS QUE TERa OS PIXELS REMOVIDOS QUANDO CONVERGIREM
+        # cpy_bis = np.copy(cpy)  # copia dos pixels que vai servir para a KDTREE
+        # cpy2 = np.copy(cpy)  # copia que receberao os novos valores
+        self.KD_tree = sp.KDTree(cpy)
+        # old_size = cpy.size
+        ################################3
+        algo_converged = True
+        it=0
+        while (True):
+            it+=1
+            print(it)
+            algo_converged=True
+            for kernel in self.kernels:
+                # print("has_converged ", kernel.has_conv)
+                if (not (kernel.has_conv)):
+                    # print("keeeeeeernesl")
+                    this_pixel = kernel.pixel
+                    nnL = self.get_nearest_ng(cpy, this_pixel, self.neighbors)
+                    new_pixel = self.calculate_new_pixel(nnL, this_pixel)
+                    # print("this pixel: ", this_pixel)
+                    # print("new pixel: ", new_pixel)
+                    if (not (kernel.has_converged(new_pixel, self.epsi))):
+                        # print(kernel.pixel)
+                        # print(new_pixel)
+                        kernel.pixel = new_pixel
+                        algo_converged = False
+            if (algo_converged):
+                break
 
-                nnL = self.get_nearest_ng(cpy_bis, this_pixel, self.neighbors)
-                new_pixel = self.calculate_new_pixel(nnL, this_pixel)
-                dist_vector = np.linalg.norm(pi.Pixel.diff_normal(new_pixel, this_pixel), 2)
-                # print(new_pixel)
-                cpy2[ind_cpy2] = new_pixel
-                if (dist_vector < self.epsi):
-                    cpy = np.delete(cpy, ind_cpy, 0)
-                    ind_cpy -= 1
-                else:
-                    cpy[ind_cpy] = new_pixel
-                ind_cpy += 1
-                ind_cpy2 += 1
-        mat_filtered_image = pi.Pixel.get_rgb(cpy2)
-        print("mat_filtered_image s", mat_filtered_image[10 * self.image.size[0] + 10])
-        new_image = self.create_new_image(mat_filtered_image, self.image.size,
+        ################################3
+        # while (cpy.size > 0):  # enquanto tiver ponrtos que nao convergiram
+        #     print(cpy.size)
+        #     ind_cpy = 0
+        #     # ind_cpy2 = 0
+        #     for kernel in
+        #     while (ind_cpy < (
+        #                 cpy.size / self.PIXEL_DIMENSION)):  # enquanto nao tiver percorrido toda a lista de pontos da imagem
+        #         this_pixel = cpy[ind_cpy]
+        #
+        #         nnL = self.get_nearest_ng(cpy_bis, this_pixel, self.neighbors)
+        #         new_pixel = self.calculate_new_pixel(nnL, this_pixel)
+        #         dist_vector = np.linalg.norm(pi.Pixel.diff_normal(new_pixel, this_pixel), 2)
+        #         # print(new_pixel)
+        #         cpy2[ind_cpy2] = new_pixel
+        #         if (dist_vector < self.epsi):
+        #             cpy = np.delete(cpy, ind_cpy, 0)
+        #             ind_cpy -= 1
+        #         else:
+        #             cpy[ind_cpy] = new_pixel
+        #         ind_cpy += 1
+        #         # ind_cpy2 += 1
+        #         # print("ind_cpy2",ind_cpy2)
+        #         # print("img-size",ind_cpy2)
+        # mat_filtered_image = pi.Pixel.get_rgb(cpy2)
+        # print("mat_filtered_image s", mat_filtered_image[10 * self.image.size[0] + 10])
+        new_image = self.create_new_image(self.image.size,
                                           "RGB")
-        print("new_image", new_image.getpixel((10, 10)))
-        print("true image", self.image.getpixel((10, 10)))
+        # print("new_image", new_image.getpixel((10, 10)))
+        # print("true image", self.image.getpixel((10, 10)))
 
         return new_image
 
@@ -101,9 +132,8 @@ class MSF:
             xs = point[:2]
             xr = point[2:]
             cs = math.exp(
-                -1 * np.linalg.norm(pi.Pixel.mult_by_const(pi.Pixel.diff_normal(xs, pixel[:2]), 1.0 / self.hs), 2))
-            cr = math.exp(
-                -1 * np.linalg.norm(pi.Pixel.mult_by_const(pi.Pixel.diff_normal(xr, pixel[2:]), 1.0 / self.hr), 2))
+                -1 * np.linalg.norm((xs - pixel[:2]) / self.hs))
+            cr = math.exp(-1 * np.linalg.norm((xr - pixel[2:]) / self.hr))
             # print(cs, cr)
             # print("cs ", cs)
             # print("cr ", cr)
@@ -112,12 +142,12 @@ class MSF:
             # print("num ", num)
             denum += cs * cr
             # print("denum ", denum)
-        new_pixel = pi.Pixel.mult_by_const(num, 1.0 / denum)
-        # new_pixel = self.round(new_pixel)  # fazer śo no final para os valores RGB
+            new_pixel = pi.Pixel.mult_by_const(num, 1.0 / denum)
+            # new_pixel = self.round(new_pixel)  # fazer so no final para os valores RGB
 
         return new_pixel
 
-    def create_new_image(self, data, xy, mode):
+    def create_new_image(self, xy, mode):
         '''
         create a new image using data sequence where each element is a pixel of the image
 
@@ -128,9 +158,19 @@ class MSF:
         :return: the new image
         '''
         new = Image.new(mode, xy)
-        data = self.np_array_to_tuple(data)
-        print(data)
-        new.putdata(data)
+        for kernel in self.kernels:
+            # pos = np.round(kernel.get_postion())
+            # pos = pos.astype(int)
+            col = np.round(kernel.get_color())
+            col = col.astype(int)
+            # print(kernel.org_pos)
+            old_orig = tuple(kernel.org_pos)
+            # print(old_orig)
+            # print("old ", img.getpixel(old_orig) ,"new", col )
+            new.putpixel(tuple(kernel.org_pos), tuple(col) )
+        # data = self.np_array_to_tuple(data)
+        # # print(data)
+        # new.putdata(data)
         return new
 
     def np_array_to_tuple(self, arr):
@@ -179,14 +219,14 @@ class MSF:
                 .reshape(h, w))
 
 
-img = Image.open("images/fruit_64.png")
-msf = MSF(img, 1, 10, 10, 10)
+img = Image.open("images/fruit.png")
+msf = MSF(img, .1, 50, 10, 10)
 new = msf.run_mean_shift()
-msf2 = MSF(img, .1, 2, 10, 10)
-new2 = msf2.run_mean_shift()
+# msf2 = MSF(img, .1, 2, 10, 10)
+# new2 = msf2.run_mean_shift()
+# # new2.show()
 # new2.show()
-new2.show()
-print(new2.getpixel((10, 10)))
-print(new.getpixel((10, 10)))
+# print(new2.getpixel((10, 10)))
+# print(new.getpixel((10, 10)))
 new.show()
 img.show()

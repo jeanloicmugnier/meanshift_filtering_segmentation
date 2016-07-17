@@ -1,4 +1,4 @@
-# import MSF
+import MSF
 import numpy as np
 import Cluster
 from PIL import Image
@@ -58,6 +58,7 @@ class Segmentation:
             for pixel in clust.get_pixel():
                 pixel[2:] = clust.get_avg()
                 img.putpixel((pixel[0], pixel[1]), pixel[2:])
+        return img
 
     def get_list_cluster(self):
         return self.list_cluster
@@ -71,34 +72,16 @@ class Segmentation:
             print("pizels", clust.get_pixels())
 
 
-img = Image.open("images/fruit.png")
-# img.show()
-# black4 = np.array([0, 0, 0, 0, 0])
-# black1 = np.array([0, 1, 0, 0, 0])
-# black2 = np.array([1, 0, 0, 0, 0])
-# black3 = np.array([1, 1, 0, 0, 0])
-# white1 = np.array([2, 0, 255, 255, 255])
-# white2 = np.array([2, 1, 255, 255, 255])
-# white3 = np.array([3, 0, 255, 255, 255])
-# white4 = np.array([3, 1, 255, 255, 255])
-# black = (0, 0, 0)
-# black1 = (0, 1, 0)
-# black2 = (1, 0, 0)
-# black3 = (1, 1, 0)
-# white = (255, 255, 255)
-# white1 = (254, 255, 255)
-# white2 = (255, 254, 255)
-# white3 = (254, 254, 255)
-# ex = [black, black1, black2, black3, white, white1, white2, white3]
-# print(ex)
-# ex = np.reshape(ex,(2,4,5))
-# print(ex)
-# new_img = Image.new("RGB", (2, 4))
-# new_img.putdata(ex)
-# new_img.show()
-# print(new_img.size)
+# epsi =.1
+# neighbors =50
+hr=10
+# hs=10
+#
+img = Image.open("images/fruit_filtered")
+# msf = MSF.MSF(img, epsi, neighbors, hr, hs)
+# new = msf.run_mean_shift()
+# new.show()
 seg = Segmentation(img)
-seg.run_segmentation(10)
+seg.run_segmentation(hr)
 seg.get_clusters_det()
-# liste = seg.get_list_cluster()
-# print(liste)
+seg.create_segmented_image().show()

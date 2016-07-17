@@ -89,6 +89,9 @@ class Pixel:
         return new
 
     @staticmethod
+    def index_2d_to_1d(x,y):
+        return
+    @staticmethod
     def sum(x_pixel, y_pixel):
         '''
 
